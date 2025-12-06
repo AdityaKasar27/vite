@@ -1,0 +1,187 @@
+import React, { useState, useEffect } from 'react';
+
+const RetroCamera = () => {
+  const [mode, setMode] = useState('neon'); // 'sepia', 'neon', 'noir'
+  const [isFlashing, setIsFlashing] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [photoVisible, setPhotoVisible] = useState(false);
+
+  // The source image (Cityscape)
+  const imageUrl = "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=800&auto=format&fit=crop";
+
+  const handleShoot = () => {
+    if (isPrinting) return; // Prevent spamming
+
+    // 1. Trigger Flash
+    setIsFlashing(true);
+    setTimeout(() => setIsFlashing(false), 150);
+
+    // 2. Start Printing Animation
+    setIsPrinting(true);
+    setPhotoVisible(false); // Reset the development process
+
+    // 3. Reset after animation completes to allow another shot
+    setTimeout(() => {
+        setIsPrinting(false);
+        setPhotoVisible(true); // Keep the photo visible at bottom
+    }, 6000); 
+  };
+
+  // Filter Styles based on mode
+  const getFilterClass = (activeMode) => {
+    switch (activeMode) {
+      case 'sepia': return 'sepia brightness-90 contrast-125';
+      case 'neon': return 'saturate-[2.5] hue-rotate-[15deg] contrast-110'; // 90s acid wash
+      case 'noir': return 'grayscale contrast-150 brightness-90';
+      default: return '';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-neutral-900 flex flex-col items-center justify-center p-4 font-mono overflow-hidden relative">
+      
+      {/* --- CSS STYLES FOR ANIMATIONS --- */}
+      <style>{`
+        @keyframes shake {
+          0% { transform: translate(1px, 1px) rotate(0deg); }
+          10% { transform: translate(-1px, -2px) rotate(-1deg); }
+          20% { transform: translate(-3px, 0px) rotate(1deg); }
+          30% { transform: translate(3px, 2px) rotate(0deg); }
+          40% { transform: translate(1px, -1px) rotate(1deg); }
+          50% { transform: translate(-1px, 2px) rotate(-1deg); }
+          60% { transform: translate(-3px, 1px) rotate(0deg); }
+          70% { transform: translate(3px, 1px) rotate(-1deg); }
+          80% { transform: translate(-1px, -1px) rotate(1deg); }
+          90% { transform: translate(1px, 2px) rotate(0deg); }
+          100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        @keyframes slideOut {
+          0% { transform: translateY(-100%); opacity: 0; }
+          100% { transform: translateY(20%); opacity: 1; }
+        }
+        .scanlines {
+          background: linear-gradient(
+            to bottom,
+            rgba(255,255,255,0),
+            rgba(255,255,255,0) 50%,
+            rgba(0,0,0,0.2) 50%,
+            rgba(0,0,0,0.2)
+          );
+          background-size: 100% 4px;
+        }
+        .shaking-preview {
+          animation: shake 0.5s infinite;
+        }
+      `}</style>
+
+      {/* --- FLASH OVERLAY --- */}
+      <div className={`fixed inset-0 bg-white z-50 pointer-events-none transition-opacity duration-150 ${isFlashing ? 'opacity-100' : 'opacity-0'}`} />
+
+      {/* --- MAIN CAMERA BODY --- */}
+      <div className="relative z-20 w-full max-w-md bg-stone-800 rounded-3xl p-6 shadow-2xl border-t-4 border-stone-700">
+        
+        {/* Texture/Brand details */}
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-1/3 h-1 bg-stone-900 rounded-full opacity-50"></div>
+        <div className="mb-4 flex justify-between items-center text-stone-400 text-xs tracking-widest uppercase">
+          <span>Retro-Cam 9000</span>
+          <span>Auto-Focus</span>
+        </div>
+
+        {/* --- VIEWFINDER (SCREEN) --- */}
+        <div className="relative w-full h-64 bg-black rounded-lg overflow-hidden border-4 border-black shadow-[inset_0_0_20px_rgba(0,0,0,1)]">
+          {/* Live Feed Image with Shake & Filter */}
+          <div className={`w-full h-full relative overflow-hidden ${!isPrinting ? 'shaking-preview' : ''}`}>
+             <img 
+               src={imageUrl} 
+               alt="Viewfinder" 
+               className={`w-full h-full object-cover transform scale-110 transition-all duration-300 ${getFilterClass(mode)}`}
+             />
+          </div>
+
+          {/* Screen UI Overlays (Battery, REC, Grid) */}
+          <div className="absolute inset-0 pointer-events-none scanlines opacity-30"></div>
+          <div className="absolute top-2 right-2 text-green-400 text-xs animate-pulse">● REC</div>
+          <div className="absolute bottom-2 left-2 text-white/70 text-xs font-bold font-sans">
+             {mode.toUpperCase()} MODE
+          </div>
+          {/* Crosshair */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-40">
+            <div className="w-8 h-8 border border-white/50 rounded-full flex items-center justify-center">
+                <div className="w-1 h-1 bg-white/50 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* --- CONTROLS --- */}
+        <div className="mt-6 flex items-center justify-between">
+            {/* Mode Switches */}
+            <div className="flex flex-col gap-2">
+                <p className="text-[10px] text-stone-500 uppercase tracking-wide mb-1 ml-1">Filter Mode</p>
+                <div className="flex gap-2 bg-stone-900 p-1.5 rounded-lg border border-stone-700 shadow-inner">
+                    {['sepia', 'neon', 'noir'].map((m) => (
+                        <button
+                            key={m}
+                            onClick={() => setMode(m)}
+                            className={`px-3 py-1 rounded text-[10px] font-bold uppercase transition-all
+                                ${mode === m 
+                                    ? 'bg-yellow-500 text-black shadow-lg scale-105' 
+                                    : 'text-stone-500 hover:text-stone-300'}`}
+                        >
+                            {m}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Shutter Button */}
+            <div className="relative group">
+                <div className="absolute inset-0 bg-red-600 rounded-full blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                <button 
+                    onClick={handleShoot}
+                    disabled={isPrinting}
+                    className="relative w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-red-700 border-4 border-stone-600 shadow-[0_4px_0_rgb(60,60,60)] active:shadow-none active:translate-y-1 active:border-stone-700 transition-all flex items-center justify-center"
+                >
+                    <div className="w-12 h-12 rounded-full border border-red-400/30"></div>
+                </button>
+            </div>
+        </div>
+      </div>
+
+      {/* --- PRINTED PHOTO SLOT (Behind Camera) --- */}
+      <div className="relative w-64 -mt-10 z-10 flex justify-center perspective-1000">
+          {/* The Film Cartridge */}
+          <div 
+            className={`
+                bg-white p-3 pb-8 shadow-xl transform transition-all duration-[1500ms] ease-out origin-top
+                ${isPrinting ? 'translate-y-[110%]' : photoVisible ? 'translate-y-[110%]' : 'translate-y-[-100%]'}
+            `}
+          >
+              {/* Photo Frame */}
+              <div className="bg-black w-56 h-56 overflow-hidden relative border border-gray-200">
+                  {/* The Actual Photo */}
+                  <img 
+                    src={imageUrl} 
+                    alt="Developed" 
+                    className={`w-full h-full object-cover ${getFilterClass(mode)}`}
+                  />
+                  
+                  {/* Developing Overlay (Black fade out) */}
+                  <div 
+                    className={`absolute inset-0 bg-black pointer-events-none transition-opacity duration-[3000ms] ease-in-out delay-[1000ms]
+                    ${isPrinting ? 'opacity-0' : 'opacity-100'}`} // Starts black, fades to clear
+                  ></div>
+              </div>
+              <div className="mt-2 text-center font-handwriting text-gray-400 text-sm italic font-serif">
+                 {new Date().toLocaleDateString()}
+              </div>
+          </div>
+      </div>
+
+      <div className="absolute bottom-4 text-stone-600 text-xs">
+         PRESS RED BUTTON TO CAPTURE
+      </div>
+    </div>
+  );
+};
+
+export default RetroCamera;
